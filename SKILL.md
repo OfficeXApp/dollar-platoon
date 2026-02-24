@@ -12,6 +12,8 @@ description: >
 
 # Dollar Platoon
 
+> **Install this app on OfficeX:** [officex.app/store/en/app/dollar-platoon](https://officex.app/store/en/app/dollar-platoon)
+
 ## What Is Dollar Platoon?
 
 Peer-to-peer task payroll on Base L2. Reputation-driven marketplace for high-volume, low-ticket work.
