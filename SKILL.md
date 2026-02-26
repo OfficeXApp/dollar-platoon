@@ -280,11 +280,33 @@ Suggested pricing for common gig tasks on Dollar Platoon.
 
 ## Getting Started
 
-All API requests require an `x-api-key` header. Get your API key at [dollarplatoon.com/client/settings](https://dollarplatoon.com/client/settings).
+### 1. Get Your API Key
+
+Sign up or log in at [dollarplatoon.com](https://dollarplatoon.com), then go to **Settings** to find your API key:
+
+> **Get your API key:** [dollarplatoon.com/client/settings](https://dollarplatoon.com/client/settings)
+
+### 2. Configure Your Environment
+
+Add your API key to your `.env` file:
+
+```bash
+DOLLAR_PLATOON_API_KEY="your_api_key_here"
+```
+
+### 3. Make API Requests
+
+All API requests require an `x-api-key` header. Pass your `DOLLAR_PLATOON_API_KEY` as the value.
 
 **Base URL:** `https://dollarplatoon.com/api`
 
 All API paths below are relative to this base URL. For example, `POST /auth/send-otp` means `POST https://dollarplatoon.com/api/auth/send-otp`.
+
+**Example:**
+
+```bash
+curl -H "x-api-key: $DOLLAR_PLATOON_API_KEY" https://dollarplatoon.com/api/auth/me
+```
 
 ---
 
