@@ -115,7 +115,7 @@ Every gig has a 6-character alphanumeric security token embedded in its email ad
 
 **How it works:**
 
-- **Email:** `{gig_id}_{token}.staging.dollar-platoon@fwd.zoomgtm.com`
+- **Email:** `{gig_id}_{token}.dollar-platoon@fwd.zoomgtm.com`
 - **Webhook:** `/inbound/webhook/{gig_id}?token={token}`
 - Inbound requests without a valid token are rejected with 403
 - Tokens are generated automatically on gig creation
@@ -278,6 +278,28 @@ Suggested pricing for common gig tasks on Dollar Platoon.
 
 ---
 
+## Getting Started
+
+All API requests require an `x-api-key` header. Get your API key at [dollarplatoon.com/client/settings](https://dollarplatoon.com/client/settings).
+
+**Base URL:** `https://dollarplatoon.com/api`
+
+All API paths below are relative to this base URL. For example, `POST /auth/send-otp` means `POST https://dollarplatoon.com/api/auth/send-otp`.
+
+---
+
+## AI Agents & Automation
+
+Dollar Platoon believes in harmony between humans and AI. Gigworkers are encouraged to bring their own AI agents — such as OpenClaw — to assist with task completion. Clients know and welcome this. AI-assisted work leads to higher quality output at more affordable prices, and the marketplace is designed to support it.
+
+Whether you use AI to draft content, validate proofs, automate submissions, or manage your workflow, Dollar Platoon is encouraging of AI usage. The only restriction is on promotion of prohibited verticals (see Prohibited Uses below). Beyond that, use whatever tools make you most effective.
+
+**For gigworkers:** Leverage AI agents to increase your throughput and quality. Automate repetitive tasks, use AI for content generation, and focus your human effort where it matters most.
+
+**For clients:** Configure proof webhooks to route submissions to your own AI agents for automated quality checks and validation. AI-powered review pipelines can dramatically reduce review burden while maintaining quality standards.
+
+---
+
 ## REST API Reference
 
 Auth via `x-api-key` header on all authenticated endpoints.
@@ -372,9 +394,9 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
   "gig": {
     "id": "GIG_01HX...",
     "title": "Reddit Comments for Product Launch",
-    "email": "GIG_01HX..._abc123.staging.dollar-platoon@fwd.zoomgtm.com",
-    "webhook": "https://staging.dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=abc123",
-    "invite_url": "https://staging.dollarplatoon.com/gig/GIG_01HX.../join",
+    "email": "GIG_01HX..._abc123.dollar-platoon@fwd.zoomgtm.com",
+    "webhook": "https://dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=abc123",
+    "invite_url": "https://dollarplatoon.com/gig/GIG_01HX.../join",
     "price": 0.50,
     "requires_approval": false,
     "status": "active"
@@ -433,8 +455,8 @@ Returns gig object. If authenticated as owner or member, includes `notes` and en
 ```json
 // Response
 {
-  "email": "GIG_01HX..._newtoken.staging.dollar-platoon@fwd.zoomgtm.com",
-  "webhook": "https://staging.dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=newtoken"
+  "email": "GIG_01HX..._newtoken.dollar-platoon@fwd.zoomgtm.com",
+  "webhook": "https://dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=newtoken"
 }
 ```
 
@@ -671,7 +693,7 @@ Accepts **JSON** (default) or **HTML/plain text** payloads. Content-Type header 
 **HTML payload (Content-Type: text/html or text/plain):**
 
 ```bash
-curl -X POST "https://staging.dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=abc123&subject=My+Report" \
+curl -X POST "https://dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=abc123&subject=My+Report" \
   -H "Content-Type: text/html" \
   -d '<h1>Task Details</h1><p>Please complete this task...</p>'
 ```
@@ -907,7 +929,7 @@ Returns 404 if user not found (webhook may not have fired yet). Returns 403 if i
 | GET | `/health` | No | Health check |
 
 ```json
-{ "status": "ok", "stage": "staging", "timestamp": "2026-02-14T..." }
+{ "status": "ok", "stage": "production", "timestamp": "2026-02-14T..." }
 ```
 
 ---
