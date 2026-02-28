@@ -1,6 +1,14 @@
 # dollar-platoon — OfficeX Skill
 
-> Install on OfficeX: [officex.app/store/en/app/dollar-platoon](https://officex.app/store/en/app/dollar-platoon)
+## Quick Install
+
+```bash
+npx skills add OfficeXApp/dollar-platoon
+```
+
+> Or install on OfficeX: [officex.app/store/en/app/dollar-platoon](https://officex.app/store/en/app/dollar-platoon)
+
+## About
 
 This repository contains the skill documentation (SKILL.md) for the **dollar-platoon** app on OfficeX.
 
@@ -8,9 +16,16 @@ This repository contains the skill documentation (SKILL.md) for the **dollar-pla
 
 A SKILL.md is a structured documentation file that AI agents (like Claude, ChatGPT, etc.) can consume to understand how to interact with an app's API. It enables AI-assisted workflows — users can ask their AI agent to perform actions on their behalf, and the agent uses the SKILL.md as its instruction manual.
 
+## Also available as
+
+
 ## Usage
 
-Copy the contents of [SKILL.md](./SKILL.md) into your AI agent's context, or point your agent to this repository.
+```bash
+npx skills add OfficeXApp/{slug}
+```
+
+Or copy the contents of [SKILL.md](./SKILL.md) into your AI agent's context manually.
 
 ## License
 
