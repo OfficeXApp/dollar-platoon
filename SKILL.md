@@ -890,6 +890,11 @@ Requires valid `token` query parameter matching the gig's security token. Return
 | POST   | `/gigs/:id/queue/poll`            | Yes  | Poll for available tasks (gigworker, fifo_queue gigs only)                                          |
 | POST   | `/gigs/:id/queue/:msgId/decline`  | Yes  | Skip a task so future polls don't return it to you (per-worker, does not hide from other workers)   |
 | GET    | `/gigs/:id/queue`                 | Yes  | List queued tasks (owner sees `declined_count` per item)                                            |
+| DELETE | `/gigs/:id/tasks/:taskId`         | Yes  | Delete a stored task/inbound message (gig owner only)                                               |
+
+#### GET /gigs/:id/queue
+
+Supports `limit` (default 100, max 500) and cursor pagination with `cursor=<next_cursor>`. The response includes `queue`, `count`, and `next_cursor`. Numeric `offset` or `start` are accepted for audit scripts, but cursor pagination is preferred.
 
 #### POST /gigs/:id/queue/poll
 
