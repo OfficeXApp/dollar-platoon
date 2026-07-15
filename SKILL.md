@@ -506,7 +506,7 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
 | ------ | ------------------------ | -------- | -------------------------------------------- |
 | POST   | `/gigs`                  | Yes      | Create new gig                               |
 | GET    | `/gigs`                  | No       | List marketplace gigs (public + active)      |
-| GET    | `/gigs/mine`             | Yes      | List user's owned gigs                       |
+| GET    | `/gigs/mine`             | Yes      | List user's owned gigs (`?tag=` substring filter) |
 | GET    | `/gigs/:id`              | Optional | Get gig detail                               |
 | PATCH  | `/gigs/:id`              | Yes      | Update gig (owner only)                      |
 | POST   | `/gigs/:id/rotate-token` | Yes      | Rotate security token (owner only)           |
@@ -524,7 +524,7 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
   "notes": "Internal notes for owner only",
   "owner_wallet": "wallet_alias_id",      // optional, auto-provisions if omitted
   "visibility": "public",                  // "public" | "private"
-  "tags": ["reddit", "writing"],
+  "tags": ["reddit", "writing", "q3-launch"],  // arbitrary free-form strings (max 25 tags, 40 chars each)
   "requires_approval": false,
   "review_timeout": 172800,                // seconds, default 48h
   "distribution": "round_robin",           // "round_robin" | "free_for_all" | "priority_weighted" | "random" | "queue" | "inbound_proof"
@@ -555,7 +555,7 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
 
 Compliance check via Gemini (blocks illegal content, warns on borderline).
 
-Valid tags: `linkedin`, `twitter`, `medium`, `tiktok`, `youtube`, `instagram`, `reddit`, `facebook`, `pinterest`, `quora`, `discord`, `telegram`, `email`, `blog`, `podcast`, `newsletter`, `seo`, `advertising`, `design`, `writing`, `translation`, `data-entry`, `research`, `survey`, `testing`, `other`
+Tags are **arbitrary free-form strings** — use them to categorize, group, and search gigs (e.g. by campaign, client, or batch). Suggested category tags that render with icons in the UI: `linkedin`, `twitter`, `medium`, `tiktok`, `youtube`, `instagram`, `reddit`, `facebook`, `pinterest`, `quora`, `discord`, `telegram`, `email`, `blog`, `podcast`, `newsletter`, `seo`, `advertising`, `design`, `writing`, `translation`, `data-entry`, `research`, `survey`, `testing`, `other`
 
 #### GET /gigs (Marketplace)
 
@@ -568,7 +568,15 @@ GET /gigs?limit=20&cursor=<base64>&tags=linkedin,twitter
 { "gigs": [...], "next_cursor": "eyJ..." }
 ```
 
-Returns public + active gigs with wallet aliases resolved.
+Returns public + active gigs with wallet aliases resolved. `?tags=` filters by case-insensitive **substring** match — `?tags=link` matches gigs tagged `"linkedin"`. Comma-separated values are OR'd.
+
+#### GET /gigs/mine
+
+```
+GET /gigs/mine?tag=q3
+```
+
+Lists your owned gigs (excluding closed). `?tag=` filters by case-insensitive **substring** match against gig tags; comma-separated values are OR'd — handy for grouping many gigs by campaign or batch.
 
 #### GET /gigs/:id
 
@@ -584,7 +592,7 @@ Returns gig object. If authenticated as owner or member, includes `notes` and en
   "terms": "Updated terms...",
   "status": "paused",
   "review_timeout": 86400,
-  "tags": ["reddit"],
+  "tags": ["reddit", "q3-launch"],           // arbitrary free-form strings; replaces the full list
   "visibility": "private",
   "distribution": "random",
   "requires_approval": true,
