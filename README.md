@@ -18,7 +18,7 @@ A SKILL.md is a structured documentation file that AI agents (like Claude, ChatG
 
 ## Also available as
 
-- [`npx skills add OfficeXApp/dollarplatoon-skill`](https://github.com/OfficeXApp/dollarplatoon-skill) — [officex.app/store/en/app/dollarplatoon-skill](https://officex.app/store/en/app/dollarplatoon-skill)
+- [`npx skills add https://github.com/OfficeXApp/dollarplatoon-skill`](https://github.com/OfficeXApp/dollarplatoon-skill) — [officex.app/store/en/app/dollarplatoon-skill](https://officex.app/store/en/app/dollarplatoon-skill)
 
 ## Usage
 
