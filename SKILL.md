@@ -644,9 +644,9 @@ Deposits USDC from your hot wallet to the gig's on-chain balance. Remember to bu
 | ------ | --------------------------------------------- | ---- | ------------------------------------- |
 | POST   | `/gigs/:id/mailboxes`                         | Yes  | Join gig (create mailbox)             |
 | GET    | `/gigs/:id/mailboxes`                         | Yes  | List mailboxes in gig (owner only)    |
-| PATCH  | `/gigs/:id/mailboxes/:mbx_id`                 | Yes  | Update mailbox (owner only)           |
+| PATCH  | `/gigs/:id/mailboxes/:mbx_id`                 | Yes  | Update mailbox (owner: priority/status; worker: tags) |
 | DELETE | `/gigs/:id/mailboxes/:mbx_id`                 | Yes  | Leave gig / remove mailbox            |
-| GET    | `/mailboxes/mine`                             | Yes  | List user's mailboxes across all gigs |
+| GET    | `/mailboxes/mine`                             | Yes  | List user's mailboxes across all gigs (`?tag=` substring filter) |
 | GET    | `/mailboxes/:mbxId/inbound`                   | Yes  | Fetch inbound messages for mailbox    |
 | POST   | `/gigs/:id/mailboxes/:mbxId/regenerate-token` | Yes  | Regenerate share token                |
 
@@ -660,7 +660,8 @@ Deposits USDC from your hot wallet to the gig's on-chain balance. Remember to bu
   "wallet_address": "0x...",    // optional, auto-provisions hot wallet if omitted
   "webhook": "https://...",     // optional, for webhook task delivery
   "notes": "I have experience with Reddit marketing",
-  "location": { "country": "US" }
+  "location": { "country": "US" },
+  "tags": ["urgent", "linkedin-batch"]  // optional, free-form private labels (max 25 tags, 40 chars each)
 }
 
 // Response
@@ -676,17 +677,20 @@ Deposits USDC from your hot wallet to the gig's on-chain balance. Remember to bu
 
 Validates reputation thresholds. Auto-creates wallet alias for external wallets.
 
-#### PATCH /gigs/:id/mailboxes/:mbx_id (Owner Only)
+#### PATCH /gigs/:id/mailboxes/:mbx_id
 
 ```json
-// Request
+// Request (gig owner)
 { "priority": 5, "status": "active" }
 
+// Request (mailbox worker)
+{ "tags": ["urgent", "linkedin-batch"] }
+
 // Response
-{ "success": true, "status": "active" }
+{ "success": true, "status": "active", "tags": ["urgent", "linkedin-batch"] }
 ```
 
-Owner can set `status` to `"active"` to approve a pending mailbox, or `"inactive"` to disable it.
+Owner can set `priority`, and `status` to `"active"` to approve a pending mailbox or `"inactive"` to disable it. The mailbox's worker can set `tags` — arbitrary free-form labels for organizing their inbox (replaces the full list; max 25 tags, 40 chars each). Tags are private to the worker: they are never returned to the gig owner via `GET /gigs/:id/mailboxes`.
 
 #### GET /mailboxes/mine
 
@@ -705,11 +709,14 @@ Owner can set `status` to `"active"` to approve a pending mailbox, or `"inactive
       "owner_display_name": "...",
       "tasks_received": 12,
       "proofs_submitted": 10,
-      "response_rate": 0.83
+      "response_rate": 0.83,
+      "tags": ["urgent", "linkedin-batch"]
     }
   ]
 }
 ```
+
+Supports `?tag=` filtering by case-insensitive **substring** match against your tags — `?tag=link` matches a mailbox tagged `"linkedin-batch"`. Comma-separated values are OR'd: `?tag=urgent,linkedin`.
 
 #### GET /mailboxes/:mbxId/inbound
 
