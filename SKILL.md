@@ -510,6 +510,8 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
 | GET    | `/gigs/:id`              | Optional | Get gig detail                               |
 | PATCH  | `/gigs/:id`              | Yes      | Update gig (owner only)                      |
 | POST   | `/gigs/:id/rotate-token` | Yes      | Rotate security token (owner only)           |
+| POST   | `/gigs/:id/tasks/:msgId/extend` | Yes | Reset a task's expiry clock (owner only) |
+| POST   | `/gigs/:id/tasks/:msgId/recycle` | Yes | Take a task back and redistribute it (owner only) |
 | GET    | `/gigs/:id/dashboard`    | Yes      | Get gig dashboard with all data (owner only) |
 | POST   | `/gigs/:id/deposit`      | Yes      | Deposit USDC to gig treasury                 |
 
@@ -524,9 +526,10 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
   "notes": "Internal notes for owner only",
   "owner_wallet": "wallet_alias_id",      // optional, auto-provisions if omitted
   "visibility": "public",                  // "public" | "private"
-  "tags": ["reddit", "writing", "q3-launch"],  // arbitrary free-form strings (max 25 tags, 40 chars each)
+  "tags": ["reddit", "writing", "q3-launch"],  // arbitrary free-form strings (max 25 tags, 256 chars each)
   "requires_approval": false,
   "review_timeout": 172800,                // seconds, default 48h
+  "task_timeout": 86400,                   // optional, seconds a worker may hold a task before it expires; null = no expiry (default)
   "distribution": "round_robin",           // "round_robin" | "free_for_all" | "priority_weighted" | "random" | "queue" | "inbound_proof"
   "min_rep_volume": null,
   "min_rep_quality": null,
@@ -555,7 +558,7 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
 
 Compliance check via Gemini (blocks illegal content, warns on borderline).
 
-Tags are **arbitrary free-form strings** — use them to categorize, group, and search gigs (e.g. by campaign, client, or batch). Suggested category tags that render with icons in the UI: `linkedin`, `twitter`, `medium`, `tiktok`, `youtube`, `instagram`, `reddit`, `facebook`, `pinterest`, `quora`, `discord`, `telegram`, `email`, `blog`, `podcast`, `newsletter`, `seo`, `advertising`, `design`, `writing`, `translation`, `data-entry`, `research`, `survey`, `testing`, `other`
+Tags are **arbitrary free-form strings** — use them to categorize, group, and search gigs (e.g. by campaign, client, or batch). Max 25 tags per gig, 256 chars each. There is no whitelist.
 
 #### GET /gigs (Marketplace)
 
@@ -592,6 +595,7 @@ Returns gig object. If authenticated as owner or member, includes `notes` and en
   "terms": "Updated terms...",
   "status": "paused",
   "review_timeout": 86400,
+  "task_timeout": 86400,                     // seconds before a held task expires; null disables expiry
   "tags": ["reddit", "q3-launch"],           // arbitrary free-form strings; replaces the full list
   "visibility": "private",
   "distribution": "random",
@@ -605,6 +609,36 @@ Returns gig object. If authenticated as owner or member, includes `notes` and en
 
 // Response
 { "success": true }
+```
+
+#### Task Expiry (task_timeout)
+
+Set `task_timeout` (seconds) on a gig to give workers a deadline: once a task is claimed (queue gigs) or delivered (push gigs), the worker must submit a proof — or act on it (report/skip) — before the deadline. Default is `null`: tasks never expire.
+
+- Expired tasks are blocked server-side: proof submission, skip, and report return `410 Gone`.
+- Unclaimed queue items never expire — the clock starts at claim/delivery.
+- Task listings (`GET /mailboxes/:mbxId/inbound`, dashboard inbound) include `expires_at` and `expired` per task.
+- The owner resolves expired tasks with the endpoints below (also usable before expiry).
+
+#### POST /gigs/:id/tasks/:msgId/extend (Owner Only)
+
+Resets the task's expiry clock, flipping it back to not-expired in the worker's mailbox.
+
+```json
+// Response
+{ "success": true, "expires_at": "2026-07-16T12:00:00.000Z", "expired": false }
+```
+
+#### POST /gigs/:id/tasks/:msgId/recycle (Owner Only)
+
+Takes the task back from its current worker and redistributes it: queue gigs return it to the queue for the next worker (the previous holder won't receive it again); push gigs reassign it to another mailbox per the gig's distribution mode.
+
+```json
+// Response (queue gig)
+{ "success": true, "requeued": true }
+
+// Response (push gig)
+{ "success": true, "reassigned_to": "01HX...", "reassigned_to_name": "Worker name" }
 ```
 
 #### POST /gigs/:id/rotate-token (Owner Only)
@@ -669,7 +703,7 @@ Deposits USDC from your hot wallet to the gig's on-chain balance. Remember to bu
   "webhook": "https://...",     // optional, for webhook task delivery
   "notes": "I have experience with Reddit marketing",
   "location": { "country": "US" },
-  "tags": ["urgent", "linkedin-batch"]  // optional, free-form private labels (max 25 tags, 40 chars each)
+  "tags": ["urgent", "linkedin-batch"]  // optional, free-form private labels (max 25 tags, 256 chars each)
 }
 
 // Response
@@ -698,7 +732,7 @@ Validates reputation thresholds. Auto-creates wallet alias for external wallets.
 { "success": true, "status": "active", "tags": ["urgent", "linkedin-batch"] }
 ```
 
-Owner can set `priority`, and `status` to `"active"` to approve a pending mailbox or `"inactive"` to disable it. The mailbox's worker can set `tags` — arbitrary free-form labels for organizing their inbox (replaces the full list; max 25 tags, 40 chars each). Tags are private to the worker: they are never returned to the gig owner via `GET /gigs/:id/mailboxes`.
+Owner can set `priority`, and `status` to `"active"` to approve a pending mailbox or `"inactive"` to disable it. The mailbox's worker can set `tags` — arbitrary free-form labels for organizing their inbox (replaces the full list; max 25 tags, 256 chars each). Tags are private to the worker: they are never returned to the gig owner via `GET /gigs/:id/mailboxes`.
 
 #### GET /mailboxes/mine
 
