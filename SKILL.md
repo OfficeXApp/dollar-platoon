@@ -186,7 +186,7 @@ Dollar Platoon may not be used for illegal activities, adult content, harassment
 
 ### Proof Submission
 
-- **Always include a `task_identifier`.** For `fifo_queue` gigs, use the polled task's `id` (the inbound message ULID) — this is how the server claims the queue item off to you and prevents other workers from double-handling it. For other distribution modes and `inbound_proof` gigs, use the task's unique reference (URL, ticket ID, etc.). **Do not use the subject line** — subjects are not unique, and collisions cause duplicate-submission 409s and missed payouts.
+- **Always include a `task_identifier`.** For `queue` gigs, use the polled task's `id` (the inbound message ULID) — this is how the server claims the queue item off to you and prevents other workers from double-handling it. For other distribution modes and `inbound_proof` gigs, use the task's unique reference (URL, ticket ID, etc.). **Do not use the subject line** — subjects are not unique, and collisions cause duplicate-submission 409s and missed payouts.
 - **Include verifiable evidence.** Proofs should contain URLs, screenshots, or other evidence that the client can independently verify. Unverifiable proofs are more likely to be rejected.
 - **Upload proof files via presigned URL first.** Use `POST /upload/presign` to get an S3 upload URL, upload your file, then include the returned `url` in your proof's `proofs` array.
 - **Check gig funding before submitting.** The gig detail endpoint shows `available_funds`. If funds are low, your proof may be approved but payment delayed until the client tops up.
@@ -437,7 +437,7 @@ curl -X POST "https://dollarplatoon.com/api/inbound/webhook/GIG_01HX...?token=ab
 1. If the payload is JSON (`type: "webhook"`), parse it directly — it's already structured
 2. If the payload is HTML (`type: "email"`), look for `input[name="agent_data"]` and parse its `value` as JSON
 3. If no `agent_data` input exists, fall back to parsing visible text content
-4. Use `task_id` from the JSON as your `task_identifier` when submitting proofs. For `fifo_queue` gigs (where you poll tasks via `/queue/poll`), use the polled task's `id` instead — this lets the server atomically claim the queue item to your mailbox.
+4. Use `task_id` from the JSON as your `task_identifier` when submitting proofs. For `queue` gigs (where you poll tasks via `/queue/poll`), use the polled task's `id` instead — this lets the server atomically claim the queue item to your mailbox.
 
 ---
 
@@ -527,7 +527,7 @@ Creates new user if first login. Auto-provisions hot wallet. Returns existing AP
   "tags": ["reddit", "writing"],
   "requires_approval": false,
   "review_timeout": 172800,                // seconds, default 48h
-  "distribution": "round_robin",           // "round_robin" | "free_for_all" | "priority_weighted" | "random" | "fifo_queue" | "inbound_proof"
+  "distribution": "round_robin",           // "round_robin" | "free_for_all" | "priority_weighted" | "random" | "queue" | "inbound_proof"
   "min_rep_volume": null,
   "min_rep_quality": null,
   "min_rep_recency": null,
@@ -765,7 +765,7 @@ Owner can set `status` to `"active"` to approve a pending mailbox, or `"inactive
 ```
 
 **`task_identifier` is critical.** This field links a proof to the specific task it fulfills.
-- For **`fifo_queue` gigs**, pass the polled task's `id` (the inbound message ULID returned by `/queue/poll`). The server uses this to atomically claim the queue item out of the queue to your mailbox.
+- For **`queue` gigs**, pass the polled task's `id` (the inbound message ULID returned by `/queue/poll`). The server uses this to atomically claim the queue item out of the queue to your mailbox.
 - For **`inbound_proof` gigs** and other distribution modes, use the task's unique reference (URL, ticket ID, publisher-supplied `task_id`, etc.).
 - **Avoid using the subject line** — subjects are rarely unique, and collisions cause duplicate-submission 409s.
 
@@ -880,14 +880,14 @@ Requires valid `token` query parameter matching the gig's security token. Return
 - **random** — Uniform random selection
 - **priority_weighted** — Weighted by mailbox priority (1-10, higher = more tasks)
 - **free_for_all** — All active mailboxes receive the task
-- **fifo_queue** — Tasks stored in a FIFO queue; workers poll and claim tasks on-demand
+- **queue** — Tasks stored in a shared queue; workers poll and claim tasks on-demand
 - **inbound_proof** — No tasks distributed; workers submit proofs directly without task assignment
 
 ### Queue (FIFO)
 
 | Method | Path                              | Auth | Description                                                                                         |
 | ------ | --------------------------------- | ---- | --------------------------------------------------------------------------------------------------- |
-| POST   | `/gigs/:id/queue/poll`            | Yes  | Poll for available tasks (gigworker, fifo_queue gigs only)                                          |
+| POST   | `/gigs/:id/queue/poll`            | Yes  | Poll for available tasks (gigworker, queue gigs only)                                          |
 | POST   | `/gigs/:id/queue/:msgId/decline`  | Yes  | Skip a task so future polls don't return it to you (per-worker, does not hide from other workers)   |
 | GET    | `/gigs/:id/queue`                 | Yes  | List queued tasks (owner sees `declined_count` per item)                                            |
 | DELETE | `/gigs/:id/tasks/:taskId`         | Yes  | Delete a stored task/inbound message (gig owner only)                                               |
@@ -913,7 +913,7 @@ Supports `limit` (default 100, max 500) and cursor pagination with `cursor=<next
 }
 ```
 
-For `fifo_queue` gigs only. Returns unclaimed queued tasks (oldest first), skipping items you've already submitted a proof for or declined. Tasks are not forwarded to mailboxes — gigworkers must poll to claim them.
+For `queue` gigs only. Returns unclaimed queued tasks in the configured queue order, skipping items you've already submitted a proof for or declined. Tasks are not forwarded to mailboxes — gigworkers must poll to claim them.
 
 #### POST /gigs/:id/queue/:msgId/decline
 
@@ -921,10 +921,10 @@ Marks a queue item as skipped *for the calling worker only*. Idempotent. Returns
 
 Use this when a polled task isn't suitable for you (spam, duplicate, ineligible, etc.) so future polls return fresh items instead of the same ones at the head of the FIFO queue. Other workers still see the item. The gig owner sees a `declined_count` on their dashboard so they can prune genuinely unworkable items.
 
-**For Gigworkers (FIFO Queue gigs):**
+**For Gigworkers (Queue gigs):**
 
 - Tasks are NOT forwarded to your mailbox. Instead, use "Poll New Tasks" in the UI or call `POST /gigs/:id/queue/poll` to claim tasks from the shared queue.
-- Tasks are stored oldest-first (FIFO) and filtered against proofs you've already submitted or items you've declined.
+- Tasks are returned in the configured queue order (FIFO or LIFO) and filtered against proofs you've already submitted or items you've declined.
 - After polling, submit proofs via `POST /gigs/:id/proofs` using the polled task's `id` as `task_identifier` — this atomically claims the queue item into your mailbox.
 - If a task isn't suitable, call `POST /gigs/:id/queue/:msgId/decline` to skip it. Declining is free and doesn't affect other workers.
 
